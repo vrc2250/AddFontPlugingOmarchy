@@ -6,8 +6,9 @@ special fonts and needs an easier install path.
 
 ## ⏱️ Resume here (read this first each session)
 
-**On session start, greet the user with a one-line status recap and ask if they want to
-`git init` the repo + make the first commit** — that is the agreed next step.
+**On session start, greet the user with a one-line status recap.** Repo is live at
+https://github.com/vrc2250/AddFontPlugingOmarchy (branch `EZ-OM-FONT`). The agreed next
+step is **verifying the QML front-end on a real Omarchy 3 / Quickshell shell** — offer that.
 
 ### Status (2026-09-22): scaffold complete, bash CLI verified working
 All files live in `io.github.vrc2250.font-installer/`.
