@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.mark.font-installer",
+  "name": "Font Installer",
+  "version": "0.1.0",
+  "author": "mark",
+  "license": "MIT",
+  "homepage": "https://github.com/mark/font-installer",
+  "description": "Install .ttf/.otf/.ttc font files (or a whole folder) into your user font directory and refresh the font cache. Handy for apps that need bundled fonts, e.g. PDF-SIDES-PRO.",
+  "kinds": ["menu", "service"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "menu": "Menu.qml",
+    "service": "Service.qml"
+  },
+  "menu": {
+    "displayName": "Font Installer",
+    "category": "Style"
+  }
+}

@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+#
+# font-installer — install user-level fonts and refresh the fontconfig cache.
+#
+# This is the single source of truth for all font operations. The QML plugin
+# (Service.qml / Menu.qml) only shells out to this script. It also works as a
+# standalone CLI, independent of Omarchy.
+#
+# Fonts are installed per-user (no root needed) into:
+#   ${XDG_DATA_HOME:-$HOME/.local/share}/fonts/font-installer/
+# which fontconfig picks up everywhere after `fc-cache`.
+
+set -euo pipefail
+
+# --- config ---------------------------------------------------------------
+
+FONT_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
+DEST="$FONT_ROOT/font-installer"
+
+# Extensions fontconfig understands well.
+VALID_EXT_RE='\.(ttf|otf|ttc|otc)$'
+
+# --- helpers ---------------------------------------------------------------
+
+log()  { printf '%s\n' "$*"; }
+warn() { printf 'warning: %s\n' "$*" >&2; }
+die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
+
+refresh_cache() {
+  need fc-cache
+  fc-cache -f "$FONT_ROOT" >/dev/null 2>&1
+  log "font cache refreshed"
+}
+
+is_font() {
+  # case-insensitive extension check
+  printf '%s' "$1" | grep -qiE "$VALID_EXT_RE"
+}
+
+# --- commands --------------------------------------------------------------
+
+cmd_install() {
+  [ "$#" -gt 0 ] || die "install: no font files given"
+  mkdir -p "$DEST"
+  local installed=0 file base
+  for file in "$@"; do
+    [ -f "$file" ] || { warn "not a file, skipping: $file"; continue; }
+    if ! is_font "$file"; then
+      warn "not a .ttf/.otf/.ttc font, skipping: $file"
+      continue
+    fi
+    base="$(basename "$file")"
+    cp -f "$file" "$DEST/$base"
+    log "installed: $base"
+    installed=$((installed + 1))
+  done
+  [ "$installed" -gt 0 ] || die "no valid fonts installed"
+  refresh_cache
+  log "done — $installed font(s) installed to $DEST"
+}
+
+cmd_install_dir() {
+  [ "$#" -eq 1 ] || die "install-dir: expects exactly one directory"
+  local dir="$1"
+  [ -d "$dir" ] || die "not a directory: $dir"
+  # Collect fonts recursively, NUL-safe.
+  local -a fonts=()
+  while IFS= read -r -d '' f; do fonts+=("$f"); done < <(
+    find "$dir" -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' -o -iname '*.otc' \) -print0
+  )
+  [ "${#fonts[@]}" -gt 0 ] || die "no fonts found under: $dir"
+  cmd_install "${fonts[@]}"
+}
+
+cmd_list() {
+  if [ -d "$DEST" ] && find "$DEST" -maxdepth 1 -type f | grep -q .; then
+    find "$DEST" -maxdepth 1 -type f -printf '%f\n' | sort
+  else
+    log "(no fonts installed by font-installer)"
+  fi
+}
+
+cmd_remove() {
+  [ "$#" -gt 0 ] || die "remove: no name given"
+  [ -d "$DEST" ] || die "nothing installed"
+  local pattern removed=0 f
+  for pattern in "$@"; do
+    while IFS= read -r -d '' f; do
+      rm -f "$f"
+      log "removed: $(basename "$f")"
+      removed=$((removed + 1))
+    done < <(find "$DEST" -maxdepth 1 -type f -iname "*$pattern*" -print0)
+  done
+  [ "$removed" -gt 0 ] || die "no installed font matched: $*"
+  refresh_cache
+}
+
+cmd_refresh() {
+  refresh_cache
+}
+
+usage() {
+  cat <<'EOF'
+font-installer — install user-level fonts and refresh the fontconfig cache
+
+Usage:
+  font-installer install <file.ttf> [more fonts...]   Install one or more font files
+  font-installer install-dir <directory>              Install every font found under a directory
+  font-installer list                                 List fonts installed by this tool
+  font-installer remove <name-substring> [...]        Remove installed fonts matching a substring
+  font-installer refresh                              Rebuild the font cache
+  font-installer help                                 Show this help
+
+Fonts install per-user (no sudo) to:
+  ${XDG_DATA_HOME:-$HOME/.local/share}/fonts/font-installer/
+
+Supported formats: .ttf .otf .ttc .otc
+EOF
+}
+
+# --- dispatch --------------------------------------------------------------
+
+main() {
+  local cmd="${1:-help}"
+  shift || true
+  case "$cmd" in
+    install)     cmd_install "$@" ;;
+    install-dir) cmd_install_dir "$@" ;;
+    list)        cmd_list "$@" ;;
+    remove)      cmd_remove "$@" ;;
+    refresh)     cmd_refresh "$@" ;;
+    help|-h|--help) usage ;;
+    *) usage; die "unknown command: $cmd" ;;
+  esac
+}
+
+main "$@"

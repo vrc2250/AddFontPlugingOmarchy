@@ -1,0 +1,13 @@
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
+
+# Font artifacts accidentally dropped in the repo
+*.ttf
+*.otf
+*.ttc
+*.otc
+
+# Local test output
+/tmp/
