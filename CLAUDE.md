@@ -10,7 +10,7 @@ special fonts and needs an easier install path.
 `git init` the repo + make the first commit** — that is the agreed next step.
 
 ### Status (2026-09-22): scaffold complete, bash CLI verified working
-All files live in `io.github.mark.font-installer/`.
+All files live in `io.github.vrc2250.font-installer/`.
 
 - ✅ `manifest.json` — kinds `["menu","service"]`, Style category
 - ✅ `font-installer` (bash, executable) — the single source of truth. Commands:
@@ -33,7 +33,7 @@ Fonts install per-user to `~/.local/share/fonts/font-installer/` (no sudo). Form
 
 ## Standalone CLI usage
 ```sh
-cd io.github.mark.font-installer
+cd io.github.vrc2250.font-installer
 ./font-installer install-dir /path/to/PDF-SIDES-PRO/fonts
 ./font-installer list
 ```
